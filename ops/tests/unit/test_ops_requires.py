@@ -91,10 +91,19 @@ def test_is_ready_no_relation(harness, event_type):
 def test_is_ready_success(harness):
     chksum = "72bd9ed0dbf680ea356bca7d78f1cda9e6484227f0d270b0602128ecb622686f"
     completed = '{"i-abcdefghijklmnopq": "%s"}' % chksum
-    harness.add_relation("gcp", "remote", unit_data={"completed": completed})
-    assert harness.charm.gcp.is_ready is True
+    credentials = '"{\\n  \\"key\\": \\"value\\"\\n}\\n"'
     event = ops.ConfigChangedEvent(None)
+
+    assert harness.charm.gcp.is_ready is False
+    assert harness.charm.gcp.evaluate_relation(event) == "Missing required gcp"
+    assert harness.charm.gcp.credentials is None
+
+    harness.add_relation(
+        "gcp", "remote", unit_data={"completed": completed, "credentials": credentials}
+    )
+    assert harness.charm.gcp.is_ready is True
     assert harness.charm.gcp.evaluate_relation(event) is None
+    assert harness.charm.gcp.credentials == b"ewogICJrZXkiOiAidmFsdWUiCn0K"
 
 
 @pytest.mark.parametrize(

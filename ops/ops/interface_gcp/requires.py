@@ -5,6 +5,7 @@
 This only implements the requires side, currently, since the providers
 is still using the Reactive Charm framework self.
 """
+import base64
 import json
 from hashlib import sha256
 import logging
@@ -148,7 +149,7 @@ class GCPIntegrationRequires(ops.Object):
         Whether or not the request for this instance has been completed.
         """
         requested = self._to_publish.get("requested")
-        completed = json.loads(self._received.get("completed", "{}")).get(
+        completed = self.from_json(self._received.get("completed", "{}")).get(
             self.instance_id
         )
         ready = bool(requested and requested == completed)
@@ -163,8 +164,12 @@ class GCPIntegrationRequires(ops.Object):
         return ready
 
     @property
-    def credentials(self):
-        return self._received["credentials"]
+    def credentials(self) -> Optional[bytes]:
+        """base64 encoded credentials."""
+        cred_json = self._received.get("credentials")
+        if cred_json:
+            cred_bytes = self.from_json(cred_json).encode()
+            return base64.b64encode(cred_bytes)
 
     def evaluate_relation(self, event) -> Optional[str]:
         """Determine if relation is ready."""
@@ -178,16 +183,17 @@ class GCPIntegrationRequires(ops.Object):
             return f"Waiting for {self.endpoint}"
         return None
 
+    @staticmethod
+    def from_json(s: str):
+        try:
+            return json.loads(s)
+        except json.decoder.JSONDecodeError:
+            return s
+
     @property
     def _expected_hash(self):
-        def from_json(s: str):
-            try:
-                return json.loads(s)
-            except json.decoder.JSONDecodeError:
-                return s
-
         to_sha = {
-            key: from_json(val)
+            key: self.from_json(val)
             for key, val in self._to_publish.items()
             if key != "requested"
         }
