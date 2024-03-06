@@ -103,7 +103,7 @@ def test_is_ready_success(harness):
     )
     assert harness.charm.gcp.is_ready is True
     assert harness.charm.gcp.evaluate_relation(event) is None
-    assert harness.charm.gcp.credentials == b"ewogICJrZXkiOiAidmFsdWUiCn0K"
+    assert harness.charm.gcp.credentials == '{\n  "key": "value"\n}\n'
 
 
 @pytest.mark.parametrize(

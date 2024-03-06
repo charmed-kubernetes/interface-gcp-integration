@@ -5,7 +5,6 @@
 This only implements the requires side, currently, since the providers
 is still using the Reactive Charm framework self.
 """
-import base64
 import json
 from hashlib import sha256
 import logging
@@ -164,12 +163,10 @@ class GCPIntegrationRequires(ops.Object):
         return ready
 
     @property
-    def credentials(self) -> Optional[bytes]:
-        """base64 encoded credentials."""
+    def credentials(self) -> Optional[str]:
+        """Credentials from requires side."""
         cred_json = self._received.get("credentials")
-        if cred_json:
-            cred_bytes = self.from_json(cred_json).encode()
-            return base64.b64encode(cred_bytes)
+        return self.from_json(cred_json) if cred_json else None
 
     def evaluate_relation(self, event) -> Optional[str]:
         """Determine if relation is ready."""
